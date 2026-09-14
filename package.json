@@ -26,7 +26,7 @@
     "build": "tsc && chmod 755 dist/index.js",
     "dev": "tsx src/index.ts",
     "test": "tsx src/test.ts",
-    "test:unit": "tsx tests/garmin-region.test.ts",
+    "test:unit": "tsx tests/garmin-region.test.ts && tsx tests/auth-csrf.test.ts",
     "lint": "eslint .",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",

@@ -4,6 +4,19 @@ import { join } from "node:path";
 import { getSessionDir, getSessionFile } from "./garmin-client.js";
 import { getGarminRegion, getGarminRegionConfig } from "./garmin-region.js";
 
+export async function extractCsrfToken(page: any): Promise<string | null> {
+  await page
+    .waitForSelector('meta[name="csrf-token"]', {
+      state: "attached",
+      timeout: 30000,
+    })
+    .catch(() => undefined);
+
+  return page.evaluate(
+    "() => document.querySelector('meta[name=\"csrf-token\"]')?.content ?? null"
+  );
+}
+
 /**
  * Login flow that uses the user's real Chrome profile to bypass Cloudflare.
  * Falls back to a fresh Playwright browser if Chrome profile isn't found.
@@ -67,12 +80,13 @@ export async function runLogin(): Promise<void> {
   });
 
   console.error("Loading the Garmin activities page...");
-  await page.goto(activityUrl);
+  await page.goto(activityUrl, {
+    waitUntil: "domcontentloaded",
+    timeout: 30000,
+  });
 
   // Extract CSRF token from <meta name="csrf-token">
-  const csrf: string | null = await page.evaluate(
-    "() => document.querySelector('meta[name=\"csrf-token\"]')?.content ?? null"
-  );
+  const csrf = await extractCsrfToken(page);
 
   if (!csrf) {
     console.error(
