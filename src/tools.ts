@@ -9,6 +9,7 @@ import {
   sessionExists,
   getSessionFile,
 } from "./garmin-client.js";
+import { getGarminRegion, getGarminRegionConfig } from "./garmin-region.js";
 export { registerResources } from "./resources.js";
 
 function jsonResult(data: unknown) {
@@ -47,8 +48,10 @@ export function registerTools(server: McpServer): void {
     {},
     async () => {
       const sessionFile = getSessionFile();
+      const region = getGarminRegion();
+      const { loginUrl, activityUrl } = getGarminRegionConfig(region);
       return textResult(
-        `# Garmin Connect Login
+        `# Garmin Connect Login (${region})
 
 To authenticate, you need the Playwright MCP server installed (\`@playwright/mcp\`).
 
@@ -56,14 +59,14 @@ To authenticate, you need the Playwright MCP server installed (\`@playwright/mcp
 
 1. **Open Garmin Connect** using the Playwright MCP browser_navigate tool:
    \`\`\`
-   browser_navigate → https://connect.garmin.com/app/activities
+   browser_navigate → ${loginUrl}
    \`\`\`
 
 2. **Tell the user** to log in to Garmin Connect in the browser window that opened. Wait for them to confirm they are logged in and can see their activities.
 
 3. **Navigate to the activities page** (the login may redirect elsewhere):
    \`\`\`
-   browser_navigate → https://connect.garmin.com/app/activities
+   browser_navigate → ${activityUrl}
    \`\`\`
 
 4. **Extract the CSRF token** using browser_evaluate (NOT browser_run_code — the meta tag needs the page to be fully rendered):
@@ -94,6 +97,7 @@ To authenticate, you need the Playwright MCP server installed (\`@playwright/mcp
 7. **IMPORTANT: Call the \`check-session\` tool** to verify the login worked.
 
 ## Notes
+- The region comes from \`GARMIN_REGION\`; it defaults to \`cn\`. Set it to \`global\` for the international Garmin service.
 - Session cookies expire after a few hours — re-run this flow when they do.
 - The Playwright browser must stay open during steps 4-5 (don't close it before extracting).
 `

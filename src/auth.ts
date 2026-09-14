@@ -2,6 +2,20 @@ import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { getSessionDir, getSessionFile } from "./garmin-client.js";
+import { getGarminRegion, getGarminRegionConfig } from "./garmin-region.js";
+
+export async function extractCsrfToken(page: any): Promise<string | null> {
+  await page
+    .waitForSelector('meta[name="csrf-token"]', {
+      state: "attached",
+      timeout: 30000,
+    })
+    .catch(() => undefined);
+
+  return page.evaluate(
+    "() => document.querySelector('meta[name=\"csrf-token\"]')?.content ?? null"
+  );
+}
 
 /**
  * Login flow that uses the user's real Chrome profile to bypass Cloudflare.
@@ -51,8 +65,10 @@ export async function runLogin(): Promise<void> {
     ? await context.newPage()
     : await context.newPage();
 
-  console.error("Opening Garmin Connect...");
-  await page.goto("https://connect.garmin.com/app/activities");
+  const region = getGarminRegion();
+  const { loginUrl, activityUrl } = getGarminRegionConfig(region);
+  console.error(`Opening Garmin Connect (${region})...`);
+  await page.goto(loginUrl);
 
   console.error(
     "\n  Log in to Garmin Connect in the browser window.\n" +
@@ -63,10 +79,14 @@ export async function runLogin(): Promise<void> {
     process.stdin.once("data", () => resolve());
   });
 
+  console.error("Loading the Garmin activities page...");
+  await page.goto(activityUrl, {
+    waitUntil: "domcontentloaded",
+    timeout: 30000,
+  });
+
   // Extract CSRF token from <meta name="csrf-token">
-  const csrf: string | null = await page.evaluate(
-    "() => document.querySelector('meta[name=\"csrf-token\"]')?.content ?? null"
-  );
+  const csrf = await extractCsrfToken(page);
 
   if (!csrf) {
     console.error(

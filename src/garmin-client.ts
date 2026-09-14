@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { getGarminRegion, getGarminRegionConfig } from "./garmin-region.js";
 
 const SESSION_DIR = join(homedir(), ".garmin-connect-mcp");
 const SESSION_FILE = join(SESSION_DIR, "session.json");
@@ -52,6 +53,7 @@ export class GarminClient {
   private cookies: Cookie[];
   private initialized = false;
   private displayName: string | null = null;
+  private readonly connectOrigin: string;
 
   constructor(sessionPath?: string) {
     const session = sessionPath
@@ -60,6 +62,7 @@ export class GarminClient {
 
     this.csrfToken = session.csrf_token;
     this.cookies = session.cookies;
+    this.connectOrigin = getGarminRegionConfig(getGarminRegion()).connectOrigin;
   }
 
   private async init(): Promise<void> {
@@ -89,11 +92,10 @@ export class GarminClient {
 
     this.page = await context.newPage();
 
-    // Navigate to a static endpoint on connect.garmin.com to set the origin.
-    // We avoid /app/* routes because they redirect through sso.garmin.com
-    // which may be rate-limited by Cloudflare.
+    // Navigate to a static endpoint on the selected regional host to set the
+    // origin. Relative API requests below then stay in the same Garmin region.
     await this.page.goto(
-      "https://connect.garmin.com/site-status/garmin-connect-status.json",
+      `${this.connectOrigin}/site-status/garmin-connect-status.json`,
       { waitUntil: "domcontentloaded", timeout: 30000 }
     );
 

@@ -18,13 +18,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/etweisberg/garmin-connect-mcp.git"
+    "url": "git+https://github.com/xcbbc21/garmin-connect-mcp-cn.git"
   },
-  "homepage": "https://github.com/etweisberg/garmin-connect-mcp#readme",
+  "homepage": "https://github.com/xcbbc21/garmin-connect-mcp-cn#readme",
+  "private": true,
   "scripts": {
     "build": "tsc && chmod 755 dist/index.js",
     "dev": "tsx src/index.ts",
     "test": "tsx src/test.ts",
+    "test:unit": "tsx tests/garmin-region.test.ts && tsx tests/auth-csrf.test.ts",
     "lint": "eslint .",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
