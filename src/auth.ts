@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { getSessionDir, getSessionFile } from "./garmin-client.js";
+import { getGarminRegion, getGarminRegionConfig } from "./garmin-region.js";
 
 /**
  * Login flow that uses the user's real Chrome profile to bypass Cloudflare.
@@ -51,8 +52,10 @@ export async function runLogin(): Promise<void> {
     ? await context.newPage()
     : await context.newPage();
 
-  console.error("Opening Garmin Connect...");
-  await page.goto("https://connect.garmin.com/app/activities");
+  const region = getGarminRegion();
+  const { loginUrl, activityUrl } = getGarminRegionConfig(region);
+  console.error(`Opening Garmin Connect (${region})...`);
+  await page.goto(loginUrl);
 
   console.error(
     "\n  Log in to Garmin Connect in the browser window.\n" +
@@ -62,6 +65,9 @@ export async function runLogin(): Promise<void> {
   await new Promise<void>((resolve) => {
     process.stdin.once("data", () => resolve());
   });
+
+  console.error("Loading the Garmin activities page...");
+  await page.goto(activityUrl);
 
   // Extract CSRF token from <meta name="csrf-token">
   const csrf: string | null = await page.evaluate(

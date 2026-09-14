@@ -1,12 +1,9 @@
 # garmin-connect-mcp
 
-[![CI](https://github.com/etweisberg/garmin-connect-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/etweisberg/garmin-connect-mcp/actions/workflows/ci.yml)
-[![Release](https://github.com/etweisberg/garmin-connect-mcp/actions/workflows/release.yml/badge.svg)](https://github.com/etweisberg/garmin-connect-mcp/actions/workflows/release.yml)
-[![npm](https://img.shields.io/npm/v/@etweisberg/garmin-connect-mcp)](https://www.npmjs.com/package/@etweisberg/garmin-connect-mcp)
-[![npm downloads](https://img.shields.io/npm/dm/@etweisberg/garmin-connect-mcp)](https://www.npmjs.com/package/@etweisberg/garmin-connect-mcp)
+[![CI](https://github.com/xcbbc21/garmin-connect-mcp-cn/actions/workflows/ci.yml/badge.svg)](https://github.com/xcbbc21/garmin-connect-mcp-cn/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-MCP server for Garmin Connect. Access your activities, health stats, sleep data, FIT files, and more from Claude Code or any MCP client.
+MCP server for Garmin Connect. Access your activities, health stats, sleep data, FIT files, and more from Claude Code or any MCP client. This fork defaults to Garmin China.
 
 ## Why This Exists
 
@@ -14,17 +11,20 @@ In March 2026, Garmin changed their authentication API, breaking [garth](https:/
 
 This project works around that by routing all API calls through a headless Playwright browser, inheriting a real Chrome TLS fingerprint. Authentication uses browser cookies captured from a manual login session.
 
-## Install
+## Install from source
 
 ```bash
-npm install -g @etweisberg/garmin-connect-mcp
+gh repo clone xcbbc21/garmin-connect-mcp-cn
+cd garmin-connect-mcp-cn
+npm ci
 npx playwright install chromium
+npm run build
 ```
 
 Then register with Claude Code:
 
 ```bash
-claude mcp add garmin -- npx @etweisberg/garmin-connect-mcp
+claude mcp add garmin -- node /absolute/path/to/garmin-connect-mcp-cn/dist/index.js
 ```
 
 You also need the Playwright MCP server for the login flow:
@@ -49,6 +49,11 @@ In Claude Code, call the `garmin-login` tool. It will walk you through:
 2. Logging in manually
 3. Extracting cookies and CSRF token
 4. Saving the session to `~/.garmin-connect-mcp/session.json`
+
+The login region is controlled by `GARMIN_REGION` and defaults to `cn`. For
+China, the browser opens Garmin's regional SSO page and API requests use
+`connect.garmin.cn`. Set `GARMIN_REGION=global` to use the international Garmin
+service instead.
 
 ### 2. Verify
 
@@ -154,7 +159,7 @@ Headless Playwright Chromium
         |
         | HTTPS (real Chrome TLS fingerprint)
         v
-connect.garmin.com/gc-api/*
+ connect.garmin.cn/gc-api/* (or connect.garmin.com for global)
 ```
 
 All API calls are made from within a headless Chromium browser context via `page.evaluate(fetch(...))`. This inherits the real Chrome TLS fingerprint, bypassing Cloudflare's detection of non-browser clients.
@@ -166,8 +171,8 @@ All API calls are made from within a headless Chromium browser context via `page
 ## Development
 
 ```bash
-git clone https://github.com/etweisberg/garmin-connect-mcp.git
-cd garmin-connect-mcp
+gh repo clone xcbbc21/garmin-connect-mcp-cn
+cd garmin-connect-mcp-cn
 npm install
 npx playwright install chromium
 npm run build
@@ -181,6 +186,7 @@ npm run build
 | `npm run lint`      | Run ESLint                                     |
 | `npm run format`    | Format with Prettier                           |
 | `npm run typecheck` | Type check without emitting                    |
+| `npm run test:unit` | Run offline regional URL tests                 |
 | `npm test`          | Run integration tests (requires valid session) |
 
 ### Local Integration Testing
